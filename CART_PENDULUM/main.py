@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import linalg
 from scipy.signal import cont2discrete, ss2tf
-from control import lqr
+from control import lqr, dlqr
 from CART_PENDULUM import CART_PENDULUM
 from linear_cart_pendulum_model import Ac_CartPendulum, Bc_CartPendulum  # 別ファイルでモデルを定義
 
@@ -34,13 +34,15 @@ Dc = np.array([[0],[0]])
 Ad, Bd, Cd, Dd, dt = cont2discrete((Ac, Bc, Cc, Dc), dt)
 
 # design controllers
-Fd, _, _ = lqr(Ad, Bd, np.diag([1,100,1,1]), np.array([[1]]))
-Fod, _, _ = lqr(Ad.T, Cd.T, np.diag([1,100,1,1]), 0.1*np.eye(2))
+Fd, _, Ed = dlqr(Ad, Bd, np.diag([1,100,1,1]), np.array([[1]]))
+Fod, _, Edo = dlqr(Ad.T, Cd.T, np.diag([1,100,1,1]), 0.1*np.eye(2))
 Fod = Fod.T
+print(np.linalg.eig(Ad-Bd*Fd))
+print(np.abs(Edo))
 Fc, _, _ = lqr(Ac, Bc, np.diag([1,100,1,1]), np.array([[1]]))
 Foc, _, _ = lqr(Ac.T, Cc.T, np.diag([1,100,1,1]), 0.1*np.eye(2))
 Foc = Foc.T
-
+# %% 
 # EKF parameters
 if flag["estimator"] == "EKF":
     P = np.eye(4)
