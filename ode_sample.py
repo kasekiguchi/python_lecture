@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
+from plot_sol import plot_sol 
 
 # 行列 A, ベクトル b
 A = np.array([[0, 1],
@@ -26,13 +27,4 @@ t_eval = np.linspace(*t_span, 1000)
 # sol = solve_ivp(dxdt, t_span, x0, t_eval=t_eval)
 sol = solve_ivp(lambda t,x : A@x+b*u(t), t_span, x0, t_eval=t_eval)
 
-# プロット
-plt.figure(figsize=(10,5))
-plt.plot(sol.t, sol.y[0], label='x1(t)')
-plt.plot(sol.t, sol.y[1], label='x2(t)')
-plt.xlabel('Time t')
-plt.ylabel('States')
-plt.legend()
-plt.grid(True)
-plt.title('State Response')
-plt.show()
+plot_sol(sol)

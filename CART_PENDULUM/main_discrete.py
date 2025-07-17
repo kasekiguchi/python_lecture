@@ -13,7 +13,8 @@ tspan = np.arange(0, te+dt, dt)
 
 # control target
 init = np.array([1,0,0,0])
-cart = CART_PENDULUM(init)
+# cart = CART_PENDULUM(init)
+cart = CART_PENDULUM(init,sys_noise=0.0, measure_noise=np.array([0.0, 0.0]), dead_zone=0.0)
 
 # get nominal parameter
 param = cart.param
@@ -70,14 +71,18 @@ Y = np.array(Y)
 U = np.array(U)
 PX = np.array(PX)
 
-# plot
+# %% plot
 plt.figure()
 plt.subplot(2,1,1)
 plt.plot(T,Y)
 plt.ylabel("y=[p;th]")
+plt.xlim(0, te)
 
 plt.subplot(2,1,2)
 plt.plot(T,U)
 plt.ylabel("u")
 plt.xlabel("time [s]")
+plt.xlim(0, te)
 plt.show()
+
+# %%

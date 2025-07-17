@@ -13,7 +13,6 @@ def Ac_CartPendulum(in1):
     t6 = M*m*t4
     t7 = t2+t5+t6
     t8 = 1.0/t7
-    # return [[0.0,0.0,0.0,0.0],[0.0,0.0,-gravity*m**2*t4*t8,gravity*lg*m*t3*t8],[1.0,0.0,-Dp*t8*(J+m*t4),Dp*lg*m*t8],[0.0,1.0,Dth*lg*m*t8,-Dth*t3*t8]]
     return [[ 0.0,  0.0,   1.0, 0.0],
  [ 0.0,  0.0,   0.0, 1.0],
  [ 0.0, -gravity*m**2*t4*t8, -Dp*t8*(J+m*t4), Dth*lg*m*t8],
