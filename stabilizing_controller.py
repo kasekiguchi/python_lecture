@@ -31,7 +31,7 @@ t_span = (0, 10)
 t_eval = np.linspace(*t_span, 1000)
 
 B = np.array([[0], [1]])
-A = np.array([[0, 1], [-6, -5]])
+A = np.array([[0, 1], [-6, 5]])
 x0 = np.array([1, 0])
 # 数値積分
 sol = solve_ivp(lambda t, x: A @ x, t_span, x0, t_eval=t_eval)

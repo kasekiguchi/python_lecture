@@ -10,7 +10,7 @@ class CART_PENDULUM:
                  sys_noise=0.0001,
                  measure_noise=np.array([0.005, 2*np.pi/(2*360)]),
                  param=np.array([0.1, 0.7, 0.01, 0.3, 0.2, 0.002, 9.81, 3]),
-                 plant_param=np.array([0.125, 0.740, 9.1e-3, 0.354, 0.26, 1.98e-3, 9.81, 3.61]),
+                 plant_param=np.array([0.125, 0.0740, 9.1e-3, 0.354, 0.26, 1.98e-3, 9.813, 3.61]),
                  dead_zone=0.01):
         """
         [input]
@@ -41,7 +41,7 @@ class CART_PENDULUM:
             lambda t, x: self.ode(x, u, self.plant_param),
             [self.t, self.t + dt],
             self.state,
-            method='LSODA', t_eval=[self.t + dt]
+            method='RK45', t_eval=[self.t + dt]
         )
         self.state = sol.y[:, -1]
         self.t = sol.t[-1]
@@ -82,8 +82,8 @@ class CART_PENDULUM:
         t13 = -t12
         t14 = t4 + t8 + t10 + t11 + t13
         t15 = 1.0 / t14
-
         dxdt = np.zeros(4)
+        # dxdt = x
         dxdt[0] = dp
         dxdt[1] = dth
         dxdt[2] = -t15 * (Dp * J * dp + gravity * t2 * t3 * t11 - lg * t3 * t4 * t5

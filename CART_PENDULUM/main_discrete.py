@@ -2,19 +2,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import linalg
 from scipy.signal import cont2discrete, ss2tf
-from control import lqr, dlqr
+from control import dlqr # discrete linear quadratic regulator
 from CART_PENDULUM import CART_PENDULUM
 from linear_cart_pendulum_model import Ac_CartPendulum, Bc_CartPendulum  # 別ファイルでモデルを定義
 
 # simulation parameters
-dt = 0.3
+dt = 0.01
 te = 10
 tspan = np.arange(0, te+dt, dt)
 
 # control target
 init = np.array([1,0,0,0])
-# cart = CART_PENDULUM(init)
-cart = CART_PENDULUM(init,sys_noise=0.0, measure_noise=np.array([0.0, 0.0]), dead_zone=0.0)
+cart = CART_PENDULUM(init)
+param = cart.param
+cart = CART_PENDULUM(init,plant_param=param,sys_noise=0.0, measure_noise=np.array([0.0, 0.0]), dead_zone=0.0)
 
 # get nominal parameter
 param = cart.param
@@ -27,14 +28,12 @@ Dc = np.array([[0],[0]])
 # discretize
 Ad, Bd, Cd, Dd, dt = cont2discrete((Ac, Bc, Cc, Dc), dt)
 # design controllers
-Fd, _, Ed = dlqr(Ad, Bd, np.diag([1.0, 100.0, 1.0, 1.0]), np.array([[1.0]]))
-Fod, _, Edo = dlqr(Ad.T, Cd.T, np.diag([1,100,1,1]), 0.1*np.eye(2))
-Fod = Fod.T
-print("Closed-loop abs(eigenvalues):", np.abs(Edo))
+Fd, _, Ed = dlqr(Ad, Bd, np.diag([1.0, 100.0, 1.0, 1.0]), np.array([[1000.0]]))
+
 # %% 
 # EKF parameters
 P = np.eye(4)
-Qd = 1
+Qd = np.diag([1.0,1.0,1.0,100.0])
 Rd = 0.01*np.diag([0.02,0.05])
 
 # logging
@@ -50,7 +49,7 @@ u = 0
 
 for i in range(len(tspan)-1):
     xh_pre = Ad @ xh + Bd.flatten() * u
-    P_pre = Ad @ P @ Ad.T + Bd @ Bd.T * Qd
+    P_pre = Ad @ P @ Ad.T + Bd @ Bd.T @Qd
     Gd = P_pre @ Cd.T @ linalg.inv(Cd @ P_pre @ Cd.T + Rd)
     P = (np.eye(4) - Gd @ Cd) @ P_pre
     y = cart.measure()
@@ -73,14 +72,20 @@ PX = np.array(PX)
 
 # %% plot
 plt.figure()
-plt.subplot(2,1,1)
+plt.subplot(2,2,1)
 plt.plot(T,Y)
 plt.ylabel("y=[p;th]")
 plt.xlim(0, te)
 
-plt.subplot(2,1,2)
+plt.subplot(2,2,2)
 plt.plot(T,U)
 plt.ylabel("u")
+plt.xlabel("time [s]")
+plt.xlim(0, te)
+
+plt.subplot(2,2,3)
+plt.plot(T,X)
+plt.ylabel("x")
 plt.xlabel("time [s]")
 plt.xlim(0, te)
 plt.show()

@@ -1,21 +1,58 @@
 import numpy as np
 import casadi as ca
+from casadi import MX, vertcat
 import matplotlib.pyplot as plt
 from scipy import linalg
 from scipy.signal import cont2discrete, ss2tf
 from control import lqr, dlqr
 from CART_PENDULUM import CART_PENDULUM
 from linear_cart_pendulum_model import Ac_CartPendulum, Bc_CartPendulum  # 別ファイルでモデルを定義
+from scipy.integrate import solve_ivp
+
+def ode(x, input, p):
+    """
+    ODE of cart pendulum
+    """
+    Dp, Dth, J, M, a = p[4], p[5], p[2], p[1], p[7]
+    dp, dth = x[2], x[3]
+    gravity, lg, m, th = p[6], p[3], p[0], x[1]
+
+    t2 = np.cos(th)
+    t3 = np.sin(th)
+    t4 = J * m
+    t5 = dth**2
+    t6 = lg**2
+    t7 = m**2
+    t8 = J * M
+    t9 = t2**2
+    t10 = M * m * t6
+    t11 = t6 * t7
+    t12 = t9 * t11
+    t13 = -t12
+    t14 = t4 + t8 + t10 + t11 + t13
+    t15 = 1.0 / t14
+    dxdt = x
+    dxdt[0] = dp
+    dxdt[1] = dth
+    dxdt[2] = -t15 * (Dp * J * dp + gravity * t2 * t3 * t11 - lg * t3 * t4 * t5
+                        - lg**3 * t3 * t5 * t7 + Dp * dp * m * t6 - Dth * dth * lg * m * t2) \
+                + a * input * t15 * (J + m * t6)
+    dxdt[3] = -t15 * (Dth * M * dth + Dth * dth * m - gravity * lg * t3 * t7
+                        + t2 * t3 * t5 * t11 - Dp * dp * lg * m * t2 - M * gravity * lg * m * t3) \
+                - a * input * lg * m * t2 * t15
+
+    return dxdt
 
 # simulation parameters
-dt = 0.3
-te = 10
+dt = 0.01
+te = 3
 tspan = np.arange(0, te+dt, dt)
 
 # control target
 init = np.array([1,0,0,0])
-# cart = CART_PENDULUM(init)
-cart = CART_PENDULUM(init,sys_noise=0.0, measure_noise=np.array([0.0, 0.0]), dead_zone=0.0)
+cart = CART_PENDULUM(init)
+param = cart.param
+cart = CART_PENDULUM(init,plant_param=param,sys_noise=0.0, measure_noise=np.array([0.0, 0.0]), dead_zone=0.0)
 
 # get nominal parameter
 param = cart.param
@@ -33,8 +70,8 @@ N = 20             # prediction horizon
 nx = 4             # state: x, theta, dx, dtheta
 nu = 1             # control: f
 
-Q = np.diag([1.0, 100.0, 1.0, 1.0])   # state cost
-R = np.diag([1.0])         # input cost
+Q = np.diag([1000.0, 100.0, 1.0, 1.0])   # state cost
+R = np.diag([0.001])         # input cost
 
 # Reference
 x_ref = np.array([0.0, 0.0, 0.0, 0.0]) # target state
@@ -49,8 +86,8 @@ Uopt = opti.variable(nu, N)
 # Parameter for initial condition
 X0 = opti.parameter(nx)
 
-model_ode =lambda x, u: (Ac @ x + Bc.flatten() * u)
-
+# model_ode =lambda x, u: (Ac @ x + Bc.flatten() * u)
+model_ode = lambda x, u: ode(x,u, param)
 # RK4 integrator for dynamics
 def rk4_integrator(model, x, u, dt):
     k1 = model(x, u)
@@ -65,7 +102,10 @@ for k in range(N):
     xk = Xopt[:, k]
     uk = Uopt[:, k]
     x_next = Xopt[:, k+1]
-    xk1 = rk4_integrator(model_ode, xk, uk, dt)
+    # xk1 = rk4_integrator(model_ode, xk, uk, dt)    
+    # xk1 = rk4_integrator(model_ode, xk, uk, dt)    
+    # xk1 = xk + dt*(cart.ode(xk,uk,param))
+    xk1 = xk + dt*(model_ode(xk,uk))
     opti.subject_to(x_next == xk1)
 
 # x <= 3 の制約を追加
@@ -99,7 +139,7 @@ opti.solver("ipopt", opts)
 # %% 
 # EKF parameters
 P = np.eye(4)
-Qd = 1
+Qd = np.diag([1.0,1.0,1.0,100.0])
 Rd = 0.01*np.diag([0.02,0.05])
 
 # logging
@@ -115,7 +155,7 @@ u = 0
 
 for i in range(len(tspan)-1):
     xh_pre = Ad @ xh + Bd.flatten() * u
-    P_pre = Ad @ P @ Ad.T + Bd @ Bd.T * Qd
+    P_pre = Ad @ P @ Ad.T + Bd @ Bd.T @ Qd
     Gd = P_pre @ Cd.T @ linalg.inv(Cd @ P_pre @ Cd.T + Rd)
     P = (np.eye(4) - Gd @ Cd) @ P_pre
     y = cart.measure()
@@ -160,3 +200,4 @@ plt.xlabel("time [s]")
 plt.xlim(0, te)
 
 plt.show()
+

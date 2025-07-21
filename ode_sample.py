@@ -4,13 +4,13 @@ from scipy.integrate import solve_ivp
 from plot_sol import plot_sol 
 
 # 行列 A, ベクトル b
-A = np.array([[0, 1],
-              [-6, -5]])
+A = np.array([[-6, 18],
+              [-2, 6]])
 b = np.array([0, 1])
 
 # 外部入力
 def u(t):
-    return np.sin(t)
+    return np.sin(t)*0
 
 # 微分方程式
 def dxdt(t, x):
