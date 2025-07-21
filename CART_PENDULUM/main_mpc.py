@@ -32,20 +32,18 @@ def ode(x, input, p):
     t14 = t4 + t8 + t10 + t11 + t13
     t15 = 1.0 / t14
     dxdt = x
-    dxdt[0] = dp
-    dxdt[1] = dth
-    dxdt[2] = -t15 * (Dp * J * dp + gravity * t2 * t3 * t11 - lg * t3 * t4 * t5
+    dxdt2 = -t15 * (Dp * J * dp + gravity * t2 * t3 * t11 - lg * t3 * t4 * t5
                         - lg**3 * t3 * t5 * t7 + Dp * dp * m * t6 - Dth * dth * lg * m * t2) \
                 + a * input * t15 * (J + m * t6)
-    dxdt[3] = -t15 * (Dth * M * dth + Dth * dth * m - gravity * lg * t3 * t7
+    dxdt3 = -t15 * (Dth * M * dth + Dth * dth * m - gravity * lg * t3 * t7
                         + t2 * t3 * t5 * t11 - Dp * dp * lg * m * t2 - M * gravity * lg * m * t3) \
                 - a * input * lg * m * t2 * t15
-
+    dxdt = vertcat(dp, dth,dxdt2,dxdt3)
     return dxdt
 
 # simulation parameters
 dt = 0.01
-te = 3
+te = 10
 tspan = np.arange(0, te+dt, dt)
 
 # control target
@@ -70,7 +68,7 @@ N = 20             # prediction horizon
 nx = 4             # state: x, theta, dx, dtheta
 nu = 1             # control: f
 
-Q = np.diag([1000.0, 100.0, 1.0, 1.0])   # state cost
+Q = np.diag([10.0, 100.0, 1.0, 1.0])   # state cost
 R = np.diag([0.001])         # input cost
 
 # Reference
@@ -88,29 +86,14 @@ X0 = opti.parameter(nx)
 
 # model_ode =lambda x, u: (Ac @ x + Bc.flatten() * u)
 model_ode = lambda x, u: ode(x,u, param)
-# RK4 integrator for dynamics
-def rk4_integrator(model, x, u, dt):
-    k1 = model(x, u)
-    k2 = model(x + dt/2 * k1, u)
-    k3 = model(x + dt/2 * k2, u)
-    k4 = model(x + dt * k3, u)
-    x_next = x + dt/6*(k1 + 2*k2 + 2*k3 + k4)
-    return x_next
 
-# Dynamics constraints with RK4
+# Dynamics constraints
 for k in range(N):
     xk = Xopt[:, k]
     uk = Uopt[:, k]
     x_next = Xopt[:, k+1]
-    # xk1 = rk4_integrator(model_ode, xk, uk, dt)    
-    # xk1 = rk4_integrator(model_ode, xk, uk, dt)    
-    # xk1 = xk + dt*(cart.ode(xk,uk,param))
     xk1 = xk + dt*(model_ode(xk,uk))
     opti.subject_to(x_next == xk1)
-
-# x <= 3 の制約を追加
-# for k in range(N+1):
-#     opti.subject_to(Xopt[0, k] <= 3)
 
 # Objective function
 cost = 0
@@ -162,9 +145,26 @@ for i in range(len(tspan)-1):
     xh = xh_pre + Gd @ (y - Cd @ xh_pre)
 
     opti.set_value(X0, xh)
-    opti.set_initial(Xopt, np.tile(xh.reshape(-1, 1), (1,N+1)))
-    opti.set_initial(Uopt, np.zeros((nu,N)))
+    # opti.set_initial(Xopt, np.tile(xh.reshape(-1, 1), (1,N+1)))
+    # opti.set_initial(Uopt, np.zeros((nu,N)))
+    if i == 0:
+        # 初回は tile で埋める
+        opti.set_initial(Xopt, np.tile(xh.reshape(-1, 1), (1, N+1)))
+        opti.set_initial(Uopt, np.zeros((nu,N)))
+    else:
+        # 前回の最適化解を取得してずらす（warm start）
+        X_prev = sol.value(Xopt)  # shape: (4, N+1)
+        U_prev = sol.value(Uopt)  # shape: (1, N)
 
+        # 状態は1ステップ先をずらして使う（最後はコピー）
+        X_warm = np.hstack([X_prev[:,1:], X_prev[:,-1:]])  # shape: (4, N+1)
+
+        # 入力も同様にシフト（最後はコピー or 0）
+        U_warm = np.hstack([U_prev[1:], U_prev[-1:]])  # shape: (1, N)
+
+        # セット
+        opti.set_initial(Xopt, X_warm)
+        opti.set_initial(Uopt, U_warm)
     try:
         sol = opti.solve()
         u = sol.value(Uopt[:,0])
