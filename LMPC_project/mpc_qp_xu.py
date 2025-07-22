@@ -19,7 +19,7 @@ def build_mpc_qp(A, B, N, Q, R, x_ref, x0, umin, umax):
     h = np.hstack([np.tile(umax, N), -np.tile(umin, N)])
 
     return (
-        csc_matrix(2*block_diag(bQ, bR)),
+        csc_matrix(block_diag(bQ, bR)),
         np.zeros((nx * N + nu * N, 1)),
         csc_matrix(G),
         h,

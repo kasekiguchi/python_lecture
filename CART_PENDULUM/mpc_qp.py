@@ -1,6 +1,5 @@
 # mpc.py
 import numpy as np
-from qpsolvers import solve_qp
 from scipy.sparse import csc_matrix
 
 def build_mpc_qp(A, B, N, Q, R, x_ref, x0, umin, umax):

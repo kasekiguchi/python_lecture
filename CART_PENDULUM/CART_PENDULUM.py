@@ -10,7 +10,7 @@ class CART_PENDULUM:
                  sys_noise=0.0001,
                  measure_noise=np.array([0.005, 2*np.pi/(2*360)]),
                  param=np.array([0.1, 0.7, 0.01, 0.3, 0.2, 0.002, 9.81, 3]),
-                 plant_param=np.array([0.125, 0.0740, 9.1e-3, 0.354, 0.26, 1.98e-3, 9.813, 3.61]),
+                 plant_param=np.array([0.125, 0.740, 9.1e-3, 0.354, 0.26, 1.98e-3, 9.813, 3.61]),
                  dead_zone=0.01):
         """
         [input]

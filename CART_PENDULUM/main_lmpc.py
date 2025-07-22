@@ -11,7 +11,7 @@ from mpc_qp import build_mpc_qp
 
 # simulation parameters
 dt = 0.01
-te = 10
+te = 3
 tspan = np.arange(0, te+dt, dt)
 
 # control target
@@ -36,7 +36,7 @@ N = 20             # prediction horizon
 nx = 4             # state: x, theta, dx, dtheta
 nu = 1             # control: f
 
-Q = np.diag([100.0, 1000.0, 1.0, 1.0])   # state cost
+Q = np.diag([100.0, 100.0, 1.0, 1.0])   # state cost
 R = np.diag([0.001])         # input cost
 
 # Reference
@@ -74,12 +74,12 @@ for i in range(len(tspan)-1):
 
 
     # QP構築
-    H, f, G, h = build_mpc_qp(Ac, Bc, N, Q, R, x_ref, xh, -10, 10)
+    H, f, G, h = build_mpc_qp(Ad, Bd, N, Q, R, x_ref, xh, -10, 10)
 
     # 解く
     u_seq = solve_qp(H, f, G, h, solver="osqp")
     if u_seq is None:
-        print(f"QP solve failed at step {t}")
+        print(f"QP solve failed at step {tspan[i]}")
         break
     u = u_seq[0:nu]
 
@@ -89,13 +89,13 @@ for i in range(len(tspan)-1):
     X.extend([xh, xh])
     Y.extend([y, y])
     U.extend([u, u])
-    PX.append(cart.state.copy())
+    # PX.append(cart.state.copy())
 
 T = np.array(T)
 X = np.array(X)
 Y = np.array(Y)
 U = np.array(U)
-PX = np.array(PX)
+# PX = np.array(PX)
 
 # plot
 plt.figure()

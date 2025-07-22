@@ -25,7 +25,7 @@ def build_mpc_qp(A, B, N, Q, R, x_ref, x0, umin, umax):
     x_ref_stack = np.tile(x_ref.reshape(-1, 1), (N, 1))
     dx_ref = Phi @ x0.reshape(-1,1) - x_ref_stack
     f = (Gamma.T @ Q @ dx_ref)
-    H_qp = Gamma.T @ Q @ Gamma + H
+    H_qp = (Gamma.T @ Q @ Gamma + H)
 
     G = np.vstack([np.eye(N * nu), -np.eye(N * nu)])
     h = np.hstack([np.tile(umax, N), -np.tile(umin, N)])

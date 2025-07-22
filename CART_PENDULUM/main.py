@@ -7,8 +7,8 @@ from CART_PENDULUM import CART_PENDULUM
 from linear_cart_pendulum_model import Ac_CartPendulum, Bc_CartPendulum  # 別ファイルでモデルを定義
 
 # simulation parameters
-dt = 0.3
-te = 10
+dt = 0.01
+te = 3
 tspan = np.arange(0, te+dt, dt)
 
 # control target
@@ -33,7 +33,7 @@ print("Closed-loop abs(eigenvalues):", np.abs(Edo))
 # %% 
 # EKF parameters
 P = np.eye(4)
-Qd = 1
+Qd = np.diag([1.0,1.0,1.0,100.0])
 Rd = 0.01*np.diag([0.02,0.05])
 
 # logging
@@ -49,13 +49,14 @@ u = 0
 
 for i in range(len(tspan)-1):
     xh_pre = Ad @ xh + Bd.flatten() * u
-    P_pre = Ad @ P @ Ad.T + Bd @ Bd.T * Qd
+    P_pre = Ad @ P @ Ad.T + Bd @ Bd.T @ Qd
     Gd = P_pre @ Cd.T @ linalg.inv(Cd @ P_pre @ Cd.T + Rd)
     P = (np.eye(4) - Gd @ Cd) @ P_pre
     y = cart.measure()
     xh = xh_pre + Gd @ (y - Cd @ xh_pre)
     u = -Fd @ xh
     
+    print(u,xh)
     cart.apply_input(u, dt)
 
     T.extend([tspan[i], tspan[i+1]])
