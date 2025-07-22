@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             // "console": "internalConsole",
-            "python": "${workspaceFolder}/.venv/bin/python",
+            "python": "${workspaceFolder}/venv/bin/python",
             "console": "integratedTerminal",
         }
     ]
