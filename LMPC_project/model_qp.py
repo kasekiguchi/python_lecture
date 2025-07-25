@@ -7,6 +7,7 @@ nu = 2
 
 
 # 離散時間線形モデル: x[k+1] = A x[k] + B u[k]
+# x[k] = [x; y; dx; dy]
 def get_linear_model(dt=0.1):
     A = np.eye(nx) + dt * np.array(
         [
